@@ -25,5 +25,6 @@ With Debian/Ubuntu
 
 should be enough.
 Tested with GNU Fortran (**Ubuntu**/Linaro 4.4.4-14 ubuntu5.1)  and **Debian** 7.2
-Check the example and the movie in wiki.
+
+Check the example and the movie in [wiki](https://github.com/chraibi/Trajptr5/wiki/Examples).
 
