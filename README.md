@@ -23,6 +23,7 @@ In a terminal give
 There are no special requirements. Obviosly you will need to have a fortran compiler installed. :-)
 In Debian/Ubuntu 
 > sudo apt-get install gfortran
+
 should be enough.
 
 ### Plot scripts
