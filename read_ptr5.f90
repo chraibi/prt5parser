@@ -4,10 +4,11 @@
 ! alternatively one can also write: time index x y z. See line 167
 ! compile: f95  -o parser read_prt5.f90
 ! usage: ./parser <filename.prt5> <filename.dat>
-! tested with GNU Fortran (Ubuntu/Linaro 4.4.4-14ubuntu5.1) 4.4.5
+! tested with GNU Fortran (Ubuntu/Linaro 4.4.4-14ubuntu5.1) 4.4.5 
 !
 !------------------------------------------------------------------------------------------------
 ! MC, 02.11.2012
+!     05.06.2014
 !------------------------------------------------------------------------------------------------
 
 
@@ -29,6 +30,9 @@ END SUBROUTINE ChkMemErr
 
 
 IMPLICIT  NONE
+
+! prec.f90
+! Precision of "Four Byte" and "Eight Byte" reals
 INTEGER, PARAMETER :: FB = SELECTED_REAL_KIND(6)
 INTEGER, PARAMETER :: EB = SELECTED_REAL_KIND(12)
 
@@ -36,7 +40,7 @@ CHARACTER (len=100) :: in_file
 CHARACTER (len=100) :: out_file
 CHARACTER (len=100) :: s_out_file = "tmp.dat"
 
-INTEGER ONE_INTEGER, VERSION_NUMBER, N_EVAC, ZERO_INTEGER, EVAC_N_QUANTITIES
+INTEGER ONE_INTEGER, VERSION_NUMBER, N_EVAC, N_PART, ZERO_INTEGER, EVAC_N_QUANTITIES
 INTEGER ios, dummy, I, NN, N, NPLIM, IZERO
 INTEGER :: frame, status
 REAL(FB) :: T
@@ -68,7 +72,7 @@ ENDIF
 PRINT *, "INFO: inputfile = <", TRIM(in_file), ">"
 
 
-OPEN(unit = 9, file = in_file, form = "unformatted", status = "old", iostat = ios)
+OPEN(unit = 9, file = in_file, form = "unformatted", status = "old",   iostat = ios)
 IF (ios .NE. 0) THEN
    write (0,*) "ERROR: Could not open inputfile ", in_file
    STOP
@@ -76,7 +80,7 @@ ENDIF
 
 OPEN(unit = 15, file = out_file, form = "formatted", status = "replace", iostat = ios)
 IF (ios .NE. 0) THEN
-   write (0,*) "ERROR: Could not open outputfile ", in_file
+   write (0,*) "ERROR: Could not open outputfile ", out_file
    STOP
 ENDIF
 
@@ -84,22 +88,23 @@ ENDIF
 sort_command = 'sort -k1,1 -k2,2 -n ' // TRIM(out_file)  //' > ' // TRIM(s_out_file)
 mv_command = 'mv ' // TRIM(s_out_file) // ' ' // TRIM(out_file)
 !================== read header ================== 
-READ(9) ONE_INTEGER
-READ(9) VERSION_NUMBER
-READ(9) N_EVAC   !N_PART
+READ(9) ONE_INTEGER      ! Integer 1 to check Endian-ness
+READ(9) VERSION_NUMBER   ! FDS version number
+READ(9) N_EVAC           ! Number of PARTicle classes
+!================== read header ================== 
 WRITE(6,'(A, I2)') " #  ONE_INTEGER = ", ONE_INTEGER
 WRITE(6,'(A, F4.2)') " #  VERSION_NUMBER = ", VERSION_NUMBER/100.
 WRITE(6,'(A, I2)') " #  N_EVAC = ", N_EVAC
 
 DO N=1,N_EVAC
-   READ(9) EVAC_N_QUANTITIES, ZERO_INTEGER
+   READ(9) EVAC_N_QUANTITIES, ZERO_INTEGER  ! ZERO_INTEGER is a place holder
    WRITE(6,'(A, I2)') " #  EVAC_N_QUANTITIES = ", EVAC_N_QUANTITIES
    ALLOCATE(NAME(EVAC_N_QUANTITIES))
    ALLOCATE(UNITS(EVAC_N_QUANTITIES))
 
 
    DO NN = 1, EVAC_N_QUANTITIES
-      READ(9) NAME(NN) !OUTPUT_QUANTITY(EVAC_QUANTITIES_INDEX(NN))%NAME
+      READ(9) NAME(NN)   !OUTPUT_QUANTITY(EVAC_QUANTITIES_INDEX(NN))%NAME
       READ(9) UNITS(NN)  !OUTPUT_QUANTITY(EVAC_QUANTITIES_INDEX(NN))%UNITS
    ENDDO
 ENDDO
@@ -109,18 +114,22 @@ frame = 0
 !================== read data for pedestrians. SUBROUTINE DUMP_EVAC(T,NM) ================== 
 DOFILE: DO
    frame = frame + 1
-   READ(9), T
-   !WRITE(0, *) "#TIME=", T
+   READ(9), T           ! the time T as 4 byte real
+   !WRITE(6, *) "#  TIME = ", T
+   ! print * , "------- frame = ", frame
    DO N = 1, N_EVAC
-      READ(9), NPLIM
+      ! print * , "======="
+      READ(9), NPLIM    ! Number of particles in the PART class
       !============= PRINT something to the screen ============="
       IF (MODULO(NPLIM, 10) == 0) THEN
          WRITE (6, '(A,I4)') " NPLIM = ", NPLIM
       ELSE IF (NPLIM < 10) THEN
         WRITE (6, '(A,I4)') " NPLIM = ", NPLIM
       ENDIF
+      WRITE (6, '(A,I4)') " #  NPLIM = ", NPLIM
 
       IF (NPLIM < 1) THEN
+         WRITE (6, '(A,I4)') " EXIT because smaller that 1:  NPLIM = ", NPLIM
          EXIT DOFILE !STOP
       ENDIF
       !============================================================"
@@ -140,44 +149,34 @@ DOFILE: DO
       ALLOCATE(AP3(NPLIM),STAT=IZERO)
       CALL ChkMemErr('DUMP','AP3',IZERO) 
       ALLOCATE(AP4(NPLIM),STAT=IZERO)
-      CALL ChkMemErr('DUMP','AP4',IZERO) 
+      CALL ChkMemErr('DUMP','AP4',IZERO)
+      ALLOCATE(QP(NPLIM, EVAC_N_QUANTITIES), STAT=IZERO) 
+      CALL ChkMemErr('DUMP','QP',IZERO)
       !================================= READ Trajectories ==========================
-      READ(9, iostat = ios), (XP(I),I=1,NPLIM),(YP(I),I=1,NPLIM),(ZP(I),I=1,NPLIM), &
-           (AP1(I),I=1,NPLIM),(AP2(I),I=1,NPLIM),(AP3(I),I=1,NPLIM),(AP4(I),I=1,NPLIM)
+      READ(9, iostat = ios), (XP(I), I=1, NPLIM), (YP(I), I=1, NPLIM), (ZP(I), I=1, NPLIM)
       !==============================================================================
       IF (ios .NE. 0) THEN
          write (0,*) "ERROR: Could not read trajectories "
          EXIT DOFILE !STOP
       ENDIF
-      ! print *, "XP=", (XP(I),I=1,NPLIM)
-      ! print *, "YP=", (YP(I),I=1,NPLIM)
-      ! print *, "ZP=", (ZP(I),I=1,NPLIM)
-      ! print *, "read TA"
-      
-      READ(9, iostat = ios), (TA(I),I=1,NPLIM)  
+      READ(9, iostat = ios), (TA(I), I=1, NPLIM)  
       IF (ios .NE. 0) THEN
          write (0,*) "ERROR: Could not read TA"
          EXIT DOFILE !STOP
       ENDIF
-      ! print *, "TA=", (TA(I),I=1,NPLIM)
+      ! print *, "TA=", (TA(I), I=1, NPLIM)
     
       !================================= WRITE Trajectories ==========================
       DO I=1,NPLIM
          !WRITE (15,*) T, TA(I), XP(I), YP(I)
-         WRITE (15, '(I4, x, I4, 3(x, F15.4))') frame, TA(I), XP(I)*100, YP(I)*100, ZP(I)  !x and y in [cm] 
+         WRITE (15, '(I4, x, I4, 3(x, F15.4))') frame, TA(I), XP(I)*100, YP(I)*100, ZP(I)*100  !x and y in [cm] 
       ENDDO
       !===============================================================================
-      ! What does QP stand for??
-      
-      ! IF (EVAC_N_QUANTITIES > 0) THEN
-      !    read(9),  ((QP(I,NN),I=1,NPLIM),NN=1,EVAC_N_QUANTITIES)
-      IF (EVAC_N_QUANTITIES > 0 .AND. NPLIM > 1) THEN
-         READ(9),  (AP1(I),I=1,NPLIM),(AP2(I),I=1,EVAC_N_QUANTITIES)
-         ! do NN=1,EVAC_N_QUANTITIES
-         !    READ(9),  (AP1(I),I=1,NPLIM)
-         ! enddo
-
+      ! What does QP stand for?? Smokeview coloring particles?
+      IF (EVAC_N_QUANTITIES > 0 ) THEN
+         READ(9), ((QP(I,NN), I=1, NPLIM), NN=1,  EVAC_N_QUANTITIES)
       END IF
+
       IF (NPLIM == 1)THEN
          print *, "INFO: Close files"
          CLOSE(unit = 9)  !input file
