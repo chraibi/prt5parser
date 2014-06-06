@@ -1,4 +1,4 @@
-## Trajptr5
+## Purpose
 
 This program reads a `prt5-file` (tested with FDS Version 5.5 and FDS 6.0) and writes the pedestrian's trajectories to an output file in the following format
 
