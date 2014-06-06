@@ -16,15 +16,16 @@ subroutine progress(nowPeds, TotalPeds)
   CHARACTER :: CR = CHAR(13)    ! carriage return character
   integer :: totaldotz, dotz, ii, diffdotz
   real :: fraction, percent
-  character(len=7)::bar="???% ["
+  character(len=7)::bar="????% ["
   totaldotz  = 40
-  fraction = real(TotalPeds- nowPeds)/TotalPeds
+  fraction = real(TotalPeds- nowPeds)/(TotalPeds-1)
   percent =  fraction * 100
   dotz = int(fraction * totaldotz)
   diffdotz = totaldotz - dotz
   ii=0
-  write(unit=bar(1:3),fmt="(i3)") int(percent)
-  write(6, fmt="(a7)", advance="no") bar
+  write(unit=bar(1:4),fmt="(i4)") int(percent)
+  
+  write(6, fmt="(a8)", advance="no") bar
   !print *, "dotz=", dotz, "  totaldotz = ", totaldotz
    do ii = 1, dotz
       write(6, fmt="(a)", advance="no") "="
@@ -63,18 +64,19 @@ IMPLICIT  NONE
 INTEGER, PARAMETER :: FB = SELECTED_REAL_KIND(6)
 INTEGER, PARAMETER :: EB = SELECTED_REAL_KIND(12)
 
+
 CHARACTER (len=100) :: in_file
 CHARACTER (len=100) :: out_file
 CHARACTER (len=100) :: s_out_file = "tmp.dat"
 CHARACTER  :: dummy
 INTEGER ONE_INTEGER, VERSION_NUMBER, N_EVAC, N_PART, ZERO_INTEGER, EVAC_N_QUANTITIES
 INTEGER ios, I, NN, N, NPLIM, IZERO
-INTEGER :: frame, status
+INTEGER :: frame, status, is_error
 real ::   counter
-REAL(FB) :: T
-REAL(FB), ALLOCATABLE, DIMENSION(:) :: XP,YP,ZP, AP1, AP2, AP3, AP4
-REAL(FB), ALLOCATABLE, DIMENSION(:,:) :: QP, AP ! body angle, semi major axis, semi minor axis
 
+REAL(FB) :: T
+REAL(FB), ALLOCATABLE, DIMENSION(:) :: XP,YP,ZP
+REAL(FB), ALLOCATABLE, DIMENSION(:,:) :: QP, AP ! body angle, semi major axis, semi minor axis
 INTEGER, ALLOCATABLE, DIMENSION(:) :: TA
 
 CHARACTER(30), ALLOCATABLE,DIMENSION(:) :: NAME
@@ -134,11 +136,12 @@ DO N=1,N_EVAC
       READ(9) NAME(NN)   !OUTPUT_QUANTITY(EVAC_QUANTITIES_INDEX(NN))%NAME
       READ(9) UNITS(NN)  !OUTPUT_QUANTITY(EVAC_QUANTITIES_INDEX(NN))%UNITS
    ENDDO
-ENDDO
+ENDDO ! N_EVAC
 WRITE(6,*) "#  NAME  =  ", NAME
 WRITE(6,*) "#  UNITS = ", UNITS
 frame = 0 
 counter = 1
+is_error = 0 ! 1 if something went wrong after allucating the arrays
 !================== read data for pedestrians. SUBROUTINE DUMP_EVAC(T,NM) ================== 
 DOFILE: DO
    frame = frame + 1
@@ -150,22 +153,27 @@ DOFILE: DO
       READ(9), NPLIM    ! Number of particles in the PART class
       IF (frame .eq. 1) then 
          counter = NPLIM
+         WRITE(6,*) "#  MAX PEDESTRIANS = ", NPLIM
       ENDIF
-
-      call progress(NPLIM, counter) ! generate the progress bar.
-      !============= PRINT something to the screen ============="
-      ! IF (MODULO(NPLIM, 10) == 0) THEN
-      !    WRITE (6, '(A,I4)') " NPLIM = ", NPLIM
-      ! ELSE IF (NPLIM < 10) THEN
-      !   WRITE (6, '(A,I4)') " NPLIM = ", NPLIM
-      ! ENDIF
-      !WRITE (6, '(A,I4)') " #  NPLIM = ", NPLIM
-
+      
       IF (NPLIM < 1) THEN
-         WRITE (6, '(A,I4)') " EXIT because smaller that 1:  NPLIM = ", NPLIM
-         EXIT DOFILE !STOP
+         WRITE (6, '(A,I4)') " Got NPLIM = ", NPLIM
+         STOP 0!DOFILE !STOP
       ENDIF
+! in dump.f90 this else is not parsed here
+! ELSE
+!          WRITE(LU_PART(NM)) N_LAGRANGIAN_CLASSES
+!          DO N=1,N_LAGRANGIAN_CLASSES
+!             LPC => LAGRANGIAN_PARTICLE_CLASS(N)
+!             WRITE(LU_PART(NM)) LPC%N_QUANTITIES,ZERO_INTEGER  ! ZERO_INTEGER is a place holder for future INTEGER quantities
+!             DO NN=1,LPC%N_QUANTITIES
+!                WRITE(LU_PART(NM)) LPC%SMOKEVIEW_LABEL(NN)(1:30)
+!                WRITE(LU_PART(NM)) OUTPUT_QUANTITY(LPC%QUANTITIES_INDEX(NN))%UNITS(1:30)
+!             ENDDO
+!          ENDDO
+!       ENDIF EVAC_ONLY2
       !============================================================"
+      call progress(NPLIM, counter) ! generate the progress bar.
 
       ALLOCATE(TA(NPLIM),STAT=IZERO)
       CALL ChkMemErr('DUMP','TA',IZERO) 
@@ -175,27 +183,25 @@ DOFILE: DO
       CALL ChkMemErr('DUMP','YP',IZERO) 
       ALLOCATE(ZP(NPLIM),STAT=IZERO)
       CALL ChkMemErr('DUMP','ZP',IZERO) 
-      ALLOCATE(AP1(NPLIM),STAT=IZERO)
-      CALL ChkMemErr('DUMP','AP1',IZERO) 
-      ALLOCATE(AP2(NPLIM),STAT=IZERO)
-      CALL ChkMemErr('DUMP','AP2',IZERO) 
-      ALLOCATE(AP3(NPLIM),STAT=IZERO)
-      CALL ChkMemErr('DUMP','AP3',IZERO) 
-      ALLOCATE(AP4(NPLIM),STAT=IZERO)
-      CALL ChkMemErr('DUMP','AP4',IZERO)
-      ALLOCATE(QP(NPLIM, EVAC_N_QUANTITIES), STAT=IZERO) 
-      CALL ChkMemErr('DUMP','QP',IZERO)
+      ALLOCATE(AP(NPLIM, 4),STAT=IZERO)
+      CALL ChkMemErr('DUMP_EVAC','AP',IZERO)
+      IF (EVAC_N_QUANTITIES > 0) THEN
+         ALLOCATE(QP(NPLIM, EVAC_N_QUANTITIES), STAT=IZERO) 
+         CALL ChkMemErr('DUMP','QP',IZERO)
+      ENDIF
       !================================= READ Trajectories ==========================
       READ(9, iostat = ios), (XP(I), I=1, NPLIM), (YP(I), I=1, NPLIM), (ZP(I), I=1, NPLIM), &
-           (AP1(I), I=1,NPLIM), (AP2(I), I=1,NPLIM), (AP3(I), I=1,NPLIM), (AP4(I), I=1, NPLIM)
+           (AP(I,1),I=1,NPLIM),(AP(I,2),I=1,NPLIM),(AP(I,3),I=1,NPLIM),(AP(I,4),I=1,NPLIM)
       !==============================================================================
       IF (ios .NE. 0) THEN
-         write (0,*) "ERROR: Could not read trajectories "
+         write (0,*) " ERROR: Could not read trajectories "
+         is_error = 1
          EXIT DOFILE !STOP
       ENDIF
       READ(9, iostat = ios), (TA(I), I=1, NPLIM)  
       IF (ios .NE. 0) THEN
-         write (0,*) "ERROR: Could not read TA"
+         write (0,*) " ERROR: Could not read TA "
+         is_error = 1
          EXIT DOFILE !STOP
       ENDIF
       ! print *, "TA=", (TA(I), I=1, NPLIM)
@@ -203,7 +209,8 @@ DOFILE: DO
       !================================= WRITE Trajectories ==========================
       DO I=1,NPLIM
          !WRITE (15,*) T, TA(I), XP(I), YP(I)
-         WRITE (15, '(I4, x, I4, 3(x, F15.4))') frame, TA(I), XP(I)*100, YP(I)*100, ZP(I)*100   !x and y in[cm] 
+          WRITE (15, '(I4, x, I4, 3(x, F15.4))') frame, TA(I), XP(I)*100, YP(I)*100, ZP(I)*100   !x and y in[cm] 
+         !WRITE (15, '(I4, x, I4, 3(x, F15.4))')  TA(I), frame, XP(I)*100, YP(I)*100, ZP(I)*100   !x and y in[cm] 
       ENDDO
       !===============================================================================
       ! What does QP stand for?? Smokeview coloring particles?
@@ -233,18 +240,20 @@ DOFILE: DO
    ENDDO !N = 1, N_EVAC
 ENDDO DOFILE
 
+!============================ DEALLOCATE ==============
 print *, "INFO: Free memory"
-DEALLOCATE(AP1)
-DEALLOCATE(AP2)
-DEALLOCATE(AP3)
-DEALLOCATE(AP4)
+DEALLOCATE(AP)
 DEALLOCATE(ZP)
 DEALLOCATE(YP)
 DEALLOCATE(XP)
 DEALLOCATE(TA)
 DEALLOCATE(NAME)
 DEALLOCATE(UNITS)
-
-print *, "INFO: Program ends successfully!"
-PRINT *, "INFO: outputfile = <", TRIM(out_file), ">"
+IF (EVAC_N_QUANTITIES > 0) THEN
+   DEALLOCATE(QP)
+ENDIF
+IF ( is_error == 0) THEN
+   PRINT *, "INFO: Program ends successfully!"
+   PRINT *, "INFO: outputfile = <", TRIM(out_file), ">"
+ENDIF
 END PROGRAM 
