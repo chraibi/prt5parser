@@ -32,6 +32,6 @@ For convenience some plot scripts are provided in the directory `scripts`.
 ### Does it work?
 This parser has been tested with GNU Fortran (**Ubuntu**/Linaro 4.4.4-14 ubuntu5.1)  and **Debian** 7.2. See also the examples in  the directory `ptr5_files`. I have no idea if it will work when compiled with other compilers. Since, I do not use FDS, I don't even know if this parser *ALWAYS* works. If you have a file that makes it fail, please send it to me or open an `issue`. 
 
-Check also the example and the movie in [wiki](https://github.com/chraibi/Trajptr5/wiki/Examples) showing an evacuation of a stadium vometory.
+Check also the example and the movie in [wiki](https://github.com/chraibi/ptr5parser/wiki/Example) showing an evacuation of a stadium vometory.
 
 
