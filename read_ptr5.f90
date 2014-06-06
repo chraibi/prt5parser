@@ -1,7 +1,7 @@
 
 ! This program reads a prt5-file (FDS Version 5.5) and write the trajectories to an output file in the fllowing format
 ! frame index x y z
-! alternatively one can also write: time index x y z. See line 167
+! alternatively one can also write: time index x y z. See line 200
 ! compile: f95  -o parser read_prt5.f90
 ! usage: ./parser <filename.prt5> <filename.dat>
 ! tested with GNU Fortran (Ubuntu/Linaro 4.4.4-14ubuntu5.1) 4.4.5 
@@ -160,19 +160,7 @@ DOFILE: DO
          WRITE (6, '(A,I4)') " Got NPLIM = ", NPLIM
          STOP 0!DOFILE !STOP
       ENDIF
-! in dump.f90 this else is not parsed here
-! ELSE
-!          WRITE(LU_PART(NM)) N_LAGRANGIAN_CLASSES
-!          DO N=1,N_LAGRANGIAN_CLASSES
-!             LPC => LAGRANGIAN_PARTICLE_CLASS(N)
-!             WRITE(LU_PART(NM)) LPC%N_QUANTITIES,ZERO_INTEGER  ! ZERO_INTEGER is a place holder for future INTEGER quantities
-!             DO NN=1,LPC%N_QUANTITIES
-!                WRITE(LU_PART(NM)) LPC%SMOKEVIEW_LABEL(NN)(1:30)
-!                WRITE(LU_PART(NM)) OUTPUT_QUANTITY(LPC%QUANTITIES_INDEX(NN))%UNITS(1:30)
-!             ENDDO
-!          ENDDO
-!       ENDIF EVAC_ONLY2
-      !============================================================"
+!============================================================"
       call progress(NPLIM, counter) ! generate the progress bar.
 
       ALLOCATE(TA(NPLIM),STAT=IZERO)
@@ -189,10 +177,10 @@ DOFILE: DO
          ALLOCATE(QP(NPLIM, EVAC_N_QUANTITIES), STAT=IZERO) 
          CALL ChkMemErr('DUMP','QP',IZERO)
       ENDIF
-      !================================= READ Trajectories ==========================
+!===================== READ Trajectories ======================
       READ(9, iostat = ios), (XP(I), I=1, NPLIM), (YP(I), I=1, NPLIM), (ZP(I), I=1, NPLIM), &
            (AP(I,1),I=1,NPLIM),(AP(I,2),I=1,NPLIM),(AP(I,3),I=1,NPLIM),(AP(I,4),I=1,NPLIM)
-      !==============================================================================
+!==============================================================
       IF (ios .NE. 0) THEN
          write (0,*) " ERROR: Could not read trajectories "
          is_error = 1
@@ -206,14 +194,15 @@ DOFILE: DO
       ENDIF
       ! print *, "TA=", (TA(I), I=1, NPLIM)
     
-      !================================= WRITE Trajectories ==========================
+!================ WRITE Trajectories ======================
       DO I=1,NPLIM
          !WRITE (15,*) T, TA(I), XP(I), YP(I)
           WRITE (15, '(I4, x, I4, 3(x, F15.4))') frame, TA(I), XP(I)*100, YP(I)*100, ZP(I)*100   !x and y in[cm] 
          !WRITE (15, '(I4, x, I4, 3(x, F15.4))')  TA(I), frame, XP(I)*100, YP(I)*100, ZP(I)*100   !x and y in[cm] 
       ENDDO
-      !===============================================================================
-      ! What does QP stand for?? Smokeview coloring particles?
+!==========================================================
+      ! AP1: phi, AP2: small semi-axis, AP3: large semi-axis AP4: hight
+      ! QP color information for smokeview
       IF (EVAC_N_QUANTITIES > 0 ) THEN
          READ(9), ((QP(I,NN), I=1, NPLIM), NN=1,  EVAC_N_QUANTITIES)
       END IF
