@@ -11,10 +11,37 @@
 !     05.06.2014
 !------------------------------------------------------------------------------------------------
 
+     
+subroutine progress(nowPeds, TotalPeds)
+  CHARACTER :: CR = CHAR(13)    ! carriage return character
+  integer :: totaldotz, dotz, ii, diffdotz
+  real :: fraction, percent
+  character(len=7)::bar="???% ["
+  totaldotz  = 40
+  fraction = real(TotalPeds- nowPeds)/TotalPeds
+  percent =  fraction * 100
+  dotz = int(fraction * totaldotz)
+  diffdotz = totaldotz - dotz
+  ii=0
+  write(unit=bar(1:3),fmt="(i3)") int(percent)
+  write(6, fmt="(a7)", advance="no") bar
+  !print *, "dotz=", dotz, "  totaldotz = ", totaldotz
+   do ii = 1, dotz
+      write(6, fmt="(a)", advance="no") "="
+   enddo
+   write(6, fmt="(a)", advance="no") ">"
+   do ii = 1, diffdotz
+      write(6, fmt="(a)", advance="no") " "
+   enddo
+   write(6, fmt="(A1 ,1a1,$)"), "]" , CR 
+ 
+   flush(unit=6)
+return
 
+end subroutine progress
 
 SUBROUTINE ChkMemErr(CodeSect,VarName,IZERO) !from FDS-Code
- 
+  
 ! Memory checking routine
  
 CHARACTER(*), INTENT(IN) :: CodeSect, VarName
@@ -39,14 +66,14 @@ INTEGER, PARAMETER :: EB = SELECTED_REAL_KIND(12)
 CHARACTER (len=100) :: in_file
 CHARACTER (len=100) :: out_file
 CHARACTER (len=100) :: s_out_file = "tmp.dat"
-
+CHARACTER  :: dummy
 INTEGER ONE_INTEGER, VERSION_NUMBER, N_EVAC, N_PART, ZERO_INTEGER, EVAC_N_QUANTITIES
-INTEGER ios, dummy, I, NN, N, NPLIM, IZERO
+INTEGER ios, I, NN, N, NPLIM, IZERO
 INTEGER :: frame, status
+real ::   counter
 REAL(FB) :: T
 REAL(FB), ALLOCATABLE, DIMENSION(:) :: XP,YP,ZP, AP1, AP2, AP3, AP4
-REAL(FB), ALLOCATABLE, DIMENSION(:,:) :: QP, AP
-
+REAL(FB), ALLOCATABLE, DIMENSION(:,:) :: QP, AP ! body angle, semi major axis, semi minor axis
 
 INTEGER, ALLOCATABLE, DIMENSION(:) :: TA
 
@@ -111,6 +138,7 @@ ENDDO
 WRITE(6,*) "#  NAME  =  ", NAME
 WRITE(6,*) "#  UNITS = ", UNITS
 frame = 0 
+counter = 1
 !================== read data for pedestrians. SUBROUTINE DUMP_EVAC(T,NM) ================== 
 DOFILE: DO
    frame = frame + 1
@@ -120,13 +148,18 @@ DOFILE: DO
    DO N = 1, N_EVAC
       ! print * , "======="
       READ(9), NPLIM    ! Number of particles in the PART class
-      !============= PRINT something to the screen ============="
-      IF (MODULO(NPLIM, 10) == 0) THEN
-         WRITE (6, '(A,I4)') " NPLIM = ", NPLIM
-      ELSE IF (NPLIM < 10) THEN
-        WRITE (6, '(A,I4)') " NPLIM = ", NPLIM
+      IF (frame .eq. 1) then 
+         counter = NPLIM
       ENDIF
-      WRITE (6, '(A,I4)') " #  NPLIM = ", NPLIM
+
+      call progress(NPLIM, counter) ! generate the progress bar.
+      !============= PRINT something to the screen ============="
+      ! IF (MODULO(NPLIM, 10) == 0) THEN
+      !    WRITE (6, '(A,I4)') " NPLIM = ", NPLIM
+      ! ELSE IF (NPLIM < 10) THEN
+      !   WRITE (6, '(A,I4)') " NPLIM = ", NPLIM
+      ! ENDIF
+      !WRITE (6, '(A,I4)') " #  NPLIM = ", NPLIM
 
       IF (NPLIM < 1) THEN
          WRITE (6, '(A,I4)') " EXIT because smaller that 1:  NPLIM = ", NPLIM
@@ -153,7 +186,8 @@ DOFILE: DO
       ALLOCATE(QP(NPLIM, EVAC_N_QUANTITIES), STAT=IZERO) 
       CALL ChkMemErr('DUMP','QP',IZERO)
       !================================= READ Trajectories ==========================
-      READ(9, iostat = ios), (XP(I), I=1, NPLIM), (YP(I), I=1, NPLIM), (ZP(I), I=1, NPLIM)
+      READ(9, iostat = ios), (XP(I), I=1, NPLIM), (YP(I), I=1, NPLIM), (ZP(I), I=1, NPLIM), &
+           (AP1(I), I=1,NPLIM), (AP2(I), I=1,NPLIM), (AP3(I), I=1,NPLIM), (AP4(I), I=1, NPLIM)
       !==============================================================================
       IF (ios .NE. 0) THEN
          write (0,*) "ERROR: Could not read trajectories "
@@ -169,7 +203,7 @@ DOFILE: DO
       !================================= WRITE Trajectories ==========================
       DO I=1,NPLIM
          !WRITE (15,*) T, TA(I), XP(I), YP(I)
-         WRITE (15, '(I4, x, I4, 3(x, F15.4))') frame, TA(I), XP(I)*100, YP(I)*100, ZP(I)*100  !x and y in [cm] 
+         WRITE (15, '(I4, x, I4, 3(x, F15.4))') frame, TA(I), XP(I)*100, YP(I)*100, ZP(I)*100   !x and y in[cm] 
       ENDDO
       !===============================================================================
       ! What does QP stand for?? Smokeview coloring particles?
@@ -178,6 +212,7 @@ DOFILE: DO
       END IF
 
       IF (NPLIM == 1)THEN
+         print *, " "
          print *, "INFO: Close files"
          CLOSE(unit = 9)  !input file
          CLOSE(unit = 15) !output file
