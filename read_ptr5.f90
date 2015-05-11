@@ -115,8 +115,19 @@ IF (ios .NE. 0) THEN
 ENDIF
 
 !================== sort file with respect to <id> and than to <frame> (linux-commands) ================== 
+#if __unix__
+write (0,*) "LINUX"
 sort_command = 'sort -k1,1 -k2,2 -n ' // TRIM(out_file)  //' > ' // TRIM(s_out_file)
 mv_command = 'mv ' // TRIM(s_out_file) // ' ' // TRIM(out_file)
+#elif __WIN32__
+write (0,*) "WINDOWN"
+sort_command = 'sort ' // TRIM(out_file)  //' > ' // TRIM(s_out_file)
+mv_command = 'move ' // TRIM(s_out_file) // ' ' // TRIM(out_file)
+#else
+write (0,*) "ERROR: UNKNOWN OS"
+#endif
+
+
 read_size = 0
 INT_SIZE = sizeof(ONE_INTEGER)
 
