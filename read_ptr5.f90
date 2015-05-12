@@ -115,16 +115,17 @@ IF (ios .NE. 0) THEN
 ENDIF
 
 !================== sort file with respect to <id> and than to <frame> (linux-commands) ================== 
-#if __unix__
-write (0,*) "LINUX"
+#if UNIX
+write (0,*) "INFO: Using UNIX sort and mv commands"
 sort_command = 'sort -k1,1 -k2,2 -n ' // TRIM(out_file)  //' > ' // TRIM(s_out_file)
 mv_command = 'mv ' // TRIM(s_out_file) // ' ' // TRIM(out_file)
-#elif __WIN32__
-write (0,*) "WINDOWN"
+#elif WIN
+write (0,*) "INFO: Using WINDOWS sort and move commands"
 sort_command = 'sort ' // TRIM(out_file)  //' > ' // TRIM(s_out_file)
 mv_command = 'move ' // TRIM(s_out_file) // ' ' // TRIM(out_file)
 #else
-write (0,*) "ERROR: UNKNOWN OS"
+write (0,*) "WARNING: UNKNOWN OS. Try the directives UNIX or WIN"
+write (0,*) "WARNING: The output may not be sorted"
 #endif
 
 

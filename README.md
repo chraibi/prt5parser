@@ -11,9 +11,11 @@ alternatively one can also output the following format:
 Change in the code the `lines 171 and 172`
 
 ### compile
-> f95  -o parser read_prt5.f90
+> f95  -cpp -DSTRING  -o parser read_prt5.f90
 or 
-> gfortran  -o parser read_prt5.f90
+> gfortran   -DSTRING  -o parser read_prt5.f90
+
+where "STRING" is whether *UNIX* or *WIN* depending on your system. Passing this preprocessor directive is important, because in the code the output file is sortedusing system-specific commands (`sort`, `move`, ...)
 
 ### usage
 In a terminal give 
