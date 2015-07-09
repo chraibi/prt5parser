@@ -11,12 +11,13 @@ alternatively one can also output the following format:
 Change in the code the `lines 171 and 172`
 
 ### compile
-> f95  -cpp -DSTRING  -o parser read_prt5.f90
+> f95  -cpp -DOS  -o parser read_prt5.f90
 or 
-> gfortran   -DSTRING  -o parser read_prt5.f90
+> gfortran   -DOS  -o parser read_prt5.f90
 
-where "STRING" is whether *UNIX* or *WIN* depending on your system. Passing this preprocessor directive is important, because in the code the output file is sortedusing system-specific commands (`sort`, `move`, ...)
+where "OS" is whether *UNIX* or *WIN* depending on your system. Passing this preprocessor directive is important, because in the code the output file is sortedusing system-specific commands (`sort`, `move`, ...)
 
+With Visual Studio the definition of "OS" is by passing a `/D`. See the documentation [here](https://msdn.microsoft.com/en-us/library/hhzbb5c8.aspx).
 ### usage
 In a terminal give 
 > ./parser input_filename.prt5 output_filename.txt
