@@ -1,0 +1,117 @@
+<!doctype html>
+<html>
+  <head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="chrome=1">
+    <title>Ptr5parser by chraibi</title>
+    <link rel="stylesheet" href="stylesheets/styles.css">
+    <link rel="stylesheet" href="stylesheets/github-dark.css">
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.7.1/jquery.min.js"></script>
+    <script src="javascripts/respond.js"></script>
+    <!--[if lt IE 9]>
+      <script src="//html5shiv.googlecode.com/svn/trunk/html5.js"></script>
+    <![endif]-->
+    <!--[if lt IE 8]>
+    <link rel="stylesheet" href="stylesheets/ie.css">
+    <![endif]-->
+    <meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no">
+
+  </head>
+  <body>
+      <div id="header">
+        <nav>
+          <li class="fork"><a href="https://github.com/chraibi/ptr5parser">View On GitHub</a></li>
+          <li class="downloads"><a href="https://github.com/chraibi/ptr5parser/zipball/master">ZIP</a></li>
+          <li class="downloads"><a href="https://github.com/chraibi/ptr5parser/tarball/master">TAR</a></li>
+          <li class="title">DOWNLOADS</li>
+        </nav>
+      </div><!-- end header -->
+
+    <div class="wrapper">
+
+      <section>
+        <div id="title">
+          <h1>Ptr5parser</h1>
+          <p> prt5-file  parser for NIST&#39;s Fire Dynamics Simulator (FDS)</p>
+          <hr>
+          <span class="credits left">Project maintained by <a href="https://github.com/chraibi">chraibi</a></span>
+          <span class="credits right">Hosted on GitHub Pages &mdash; Theme by <a href="https://twitter.com/michigangraham">mattgraham</a></span>
+        </div>
+
+        <p><a href="https://raw.githubusercontent.com/chraibi/ptr5parser/master/LICENSE"><img src="https://img.shields.io/badge/license-GPL-blue.svg" alt="GitHub license"></a> <a href="https://twitter.com/intent/tweet?text=Wow:&amp;url=%5Bobject%20Object%5D"><img src="https://img.shields.io/twitter/url/https/github.com/chraibi/ptr5parser.svg?style=social" alt="Twitter"></a></p>
+
+<h2>
+<a id="purpose" class="anchor" href="#purpose" aria-hidden="true"><span class="octicon octicon-link"></span></a>Purpose</h2>
+
+<p>This program reads a <code>prt5-file</code> (tested with FDS Version 5.5 and FDS 6.0) and writes the pedestrian's trajectories to an output file in the following format</p>
+
+<pre><code>frame index x y z
+</code></pre>
+
+<p>alternatively one can also output the following format:</p>
+
+<pre><code>time index x y z
+</code></pre>
+
+<p>Change in the code the <code>lines 171 and 172</code></p>
+
+<h2>
+<a id="compile" class="anchor" href="#compile" aria-hidden="true"><span class="octicon octicon-link"></span></a>compile</h2>
+
+<pre><code>f95  -cpp -DOS  -o parser read_prt5.f90
+</code></pre>
+
+<p>or </p>
+
+<pre><code>gfortran   -DOS  -o parser read_prt5.f90
+</code></pre>
+
+<p>where <code>OS</code> is whether <strong>UNIX</strong> or <strong>WIN</strong> depending on your system. 
+Passing this preprocessor directive is important, because in the code the output file is sorted using 
+system-specific commands (<code>sort</code>, <code>move</code>, ...)</p>
+
+<p>With Visual Studio the definition of <code>OS</code> is by passing a <code>/D</code>. See the documentation <a href="https://msdn.microsoft.com/en-us/library/hhzbb5c8.aspx">here</a>.</p>
+
+<h2>
+<a id="usage" class="anchor" href="#usage" aria-hidden="true"><span class="octicon octicon-link"></span></a>usage</h2>
+
+<p>In a terminal give </p>
+
+<pre><code>./parser input_filename.prt5 output_filename.txt
+</code></pre>
+
+<h2>
+<a id="requirements" class="anchor" href="#requirements" aria-hidden="true"><span class="octicon octicon-link"></span></a>Requirements</h2>
+
+<p>There are no special requirements. Obviosly you will need to have a fortran compiler installed. :-)</p>
+
+<p>In Debian/Ubuntu </p>
+
+<pre><code>   sudo apt-get install gfortran
+</code></pre>
+
+<p>should be enough.</p>
+
+<h2>
+<a id="plot-scripts" class="anchor" href="#plot-scripts" aria-hidden="true"><span class="octicon octicon-link"></span></a>Plot scripts</h2>
+
+<p>For convenience some plot scripts are provided in the directory <code>scripts</code>. </p>
+
+<h2>
+<a id="does-it-work" class="anchor" href="#does-it-work" aria-hidden="true"><span class="octicon octicon-link"></span></a>Does it work?</h2>
+
+<p>This parser has been tested with GNU Fortran (<strong>Ubuntu</strong>/Linaro 4.4.4-14 ubuntu5.1)  and <strong>Debian</strong> 7.2. 
+See also the examples in the directory <code>ptr5_files</code>. </p>
+
+<p>I have no idea if it will work when compiled with other compilers. Since, I do not use FDS, I don't even know if this parser <em>ALWAYS</em> works. </p>
+
+<p>If you have a file that makes it fail, please open an <code>issue</code>. </p>
+
+<p>Check also the example and the movie in the <a href="https://github.com/chraibi/ptr5parser/wiki/Example">wiki</a> showing an evacuation of a stadium vometory.</p>
+      </section>
+
+    </div>
+    <!--[if !IE]><script>fixScale(document);</script><![endif]-->
+    
+  </body>
+</html>
