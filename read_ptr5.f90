@@ -1,8 +1,8 @@
 ! TODO: check getpart5data in smokeview/IOpart.c
 
-! This program reads a prt5-file (FDS Version 5.5) and write the trajectories to an output file in the fllowing format
+! This program reads a prt5-file (FDS Version 5.5) and writes the trajectories to an output file in the following format
 ! frame index x y z
-! alternatively one can also write: time index x y z. See line 200
+! alternatively one can also write out: time index x y z. See line 200
 ! compile: f95  -o parser read_prt5.f90
 ! usage: ./parser <filename.prt5> <filename.dat>
 ! tested with GNU Fortran (Ubuntu/Linaro 4.4.4-14ubuntu5.1) 4.4.5 
