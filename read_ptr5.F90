@@ -114,19 +114,23 @@ IF (ios .NE. 0) THEN
    STOP
 ENDIF
 
-!================== sort file with respect to <id> and than to <frame> (linux-commands) ================== 
+!================== sort file with respect to <id> and than to <frame> (linux-commands) ==================
+sort_command = ''
 #ifdef UNIX
 write (0,*) "INFO: Using UNIX sort and mv commands"
 sort_command = 'sort -k1,1 -k2,2 -n ' // TRIM(out_file)  //' > ' // TRIM(s_out_file)
 mv_command = 'mv ' // TRIM(s_out_file) // ' ' // TRIM(out_file)
-#elifdef WIN
+#endif
+#ifdef WIN
 write (0,*) "INFO: Using WINDOWS sort and move commands"
 sort_command = 'sort ' // TRIM(out_file)  //' > ' // TRIM(s_out_file)
 mv_command = 'move ' // TRIM(s_out_file) // ' ' // TRIM(out_file)
-#else
-write (0,*) "WARNING: UNKNOWN OS. Try the directives UNIX or WIN"
-write (0,*) "WARNING: The output may not be sorted"
 #endif
+
+if (sort_command == '') then
+   write (0,*) "WARNING: UNKNOWN OS. Try the directives UNIX or WIN"
+   write (0,*) "WARNING: The output may not be sorted"
+endif
 
 
 read_size = 0
@@ -166,6 +170,14 @@ DO N=1,N_EVAC
       WRITE(6,*) "#  UNITS = ", UNITS(NN)
    ENDDO
 ENDDO ! N_EVAC
+!================ WRITE Header ===========================
+WRITE (15,*) "#description: ", TRIM(in_file)
+WRITE (15,*) "#framerate: 16"
+WRITE (15,*) "#ID: the agent ID"
+WRITE (15,*) "#FR: the current frame"
+WRITE (15,*) "#X,Y,Z: the agents coordinates (in metres)"
+WRITE (15,*) " "
+WRITE(15,*)  "#FR	ID	X	Y	Z"
 
 frame = 0 
 counter = 1
@@ -187,10 +199,9 @@ DOFILE: DO
       ENDIF
       
       IF (NPLIM < 1) THEN
-         WRITE (6, '(A,I4)') " Got NPLIM = ", NPLIM
          STOP 0!DOFILE !STOP
       ENDIF
-!============================================================"
+      !============================================================"
       call progress(NPLIM, counter) ! generate the progress bar.
 
       ALLOCATE(TA(NPLIM),STAT=IZERO)
@@ -234,8 +245,8 @@ DOFILE: DO
          is_error = 1
          EXIT DOFILE !STOP
       ENDIF
-    
-!================ WRITE Trajectories ======================
+
+!================ WRITE Trajectories ======================      
       DO I=1,NPLIM
          !WRITE (15,*) T, TA(I), XP(I), YP(I)
           WRITE (15, '(I4, x, I4, 3(x, F15.4))') frame, TA(I), XP(I)*100, YP(I)*100, ZP(I)*100   !x and y in[cm] 
