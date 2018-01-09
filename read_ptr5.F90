@@ -35,7 +35,7 @@ subroutine progress(nowPeds, TotalPeds)
    do ii = 1, diffdotz
       write(6, fmt="(a)", advance="no") " "
    enddo
-   write(6, fmt="(A1 ,1a1,$)"), "]" , CR 
+   write(6, fmt="(A1 ,1a1,$)") "]" , CR 
  
    flush(unit=6)
 return
@@ -185,13 +185,13 @@ is_error = 0 ! 1 if something went wrong after allucating the arrays
 !================== read data for pedestrians. SUBROUTINE DUMP_EVAC(T,NM) ================== 
 DOFILE: DO
    frame = frame + 1
-   READ(9), T           ! the time T as 4 byte real
+   READ(9) T           ! the time T as 4 byte real
    read_size = read_size + sizeof(T) + 2*INT_SIZE
    !WRITE(6, *) "#  TIME = ", T
    ! print * , "------- frame = ", frame
    DO N = 1, N_EVAC
       ! print * , "======="
-      READ(9), NPLIM    ! Number of particles in the PART class
+      READ(9) NPLIM    ! Number of particles in the PART class
       read_size = read_size + sizeof(NPLIM) + 2*INT_SIZE
       IF (frame .eq. 1) then 
          counter = NPLIM
@@ -223,11 +223,11 @@ DOFILE: DO
       ! else read 3 * NPLIM 
       ! TODO: How to know the value parti-evac?
       IF(EVAC == 1) THEN 
-         READ(9, iostat = ios), (XP(I), I=1, NPLIM), (YP(I), I=1, NPLIM), (ZP(I), I=1, NPLIM), &
+         READ(9, iostat = ios) (XP(I), I=1, NPLIM), (YP(I), I=1, NPLIM), (ZP(I), I=1, NPLIM), &
               (AP(I,1),I=1,NPLIM),(AP(I,2),I=1,NPLIM),(AP(I,3),I=1,NPLIM),(AP(I,4),I=1,NPLIM)
          read_size = read_size + 7*sizeof(XP) + 2*INT_SIZE
       ELSE
-         READ(9, iostat = ios), (XP(I), I=1, NPLIM), (YP(I), I=1, NPLIM), (ZP(I), I=1, NPLIM)
+         READ(9, iostat = ios) (XP(I), I=1, NPLIM), (YP(I), I=1, NPLIM), (ZP(I), I=1, NPLIM)
          read_size = read_size + 3*sizeof(XP) + 2*INT_SIZE
       ENDIF
       
@@ -237,7 +237,7 @@ DOFILE: DO
          is_error = 1
          EXIT DOFILE !STOP
       ENDIF
-      READ(9, iostat = ios), (TA(I), I=1, NPLIM)
+      READ(9, iostat = ios) (TA(I), I=1, NPLIM)
       read_size = read_size + sizeof(TA) + 2*INT_SIZE
 
       IF (ios .NE. 0) THEN
@@ -256,7 +256,7 @@ DOFILE: DO
       ! AP1: phi, AP2: small semi-axis, AP3: large semi-axis AP4: hight
       ! QP color information for smokeview
       IF (EVAC_N_QUANTITIES > 0 ) THEN
-         READ(9), ((QP(I,NN), I=1, NPLIM), NN=1,  EVAC_N_QUANTITIES)
+         READ(9) ((QP(I,NN), I=1, NPLIM), NN=1,  EVAC_N_QUANTITIES)
          read_size = read_size + sizeof(QP) + 2*INT_SIZE
       END IF
 
