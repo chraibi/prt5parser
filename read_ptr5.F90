@@ -115,11 +115,11 @@ IF (ios .NE. 0) THEN
 ENDIF
 
 !================== sort file with respect to <id> and than to <frame> (linux-commands) ================== 
-#if UNIX
+#ifdef UNIX
 write (0,*) "INFO: Using UNIX sort and mv commands"
 sort_command = 'sort -k1,1 -k2,2 -n ' // TRIM(out_file)  //' > ' // TRIM(s_out_file)
 mv_command = 'mv ' // TRIM(s_out_file) // ' ' // TRIM(out_file)
-#elif WIN
+#elifdef WIN
 write (0,*) "INFO: Using WINDOWS sort and move commands"
 sort_command = 'sort ' // TRIM(out_file)  //' > ' // TRIM(s_out_file)
 mv_command = 'move ' // TRIM(s_out_file) // ' ' // TRIM(out_file)

@@ -22,7 +22,7 @@ f95  -cpp -DOS  -o parser read_prt5.f90
 or 
 
 ```
-gfortran   -DOS  -o parser read_prt5.f90
+gfortran   -DOS  -o parser read_ptr5.f90
 ```
 
 
@@ -35,7 +35,7 @@ With Visual Studio the definition of `OS` is by passing a `/D`. See the document
 ## usage
 In a terminal give 
 ```
-./parser input_filename.prt5 output_filename.txt
+./parser input_filename.ptr5 output_filename.txt
 ```
 
 ## Requirements
