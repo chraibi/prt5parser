@@ -12,7 +12,49 @@
 !     05.06.2014
 !------------------------------------------------------------------------------------------------
 
-     
+subroutine cleanup(out_file, read_size, file_size)
+  character(len=*), intent(in) :: out_file
+  INTEGER(4), intent(in)::read_size
+  INTEGER(4), intent(in)::file_size
+  CHARACTER(100) sort_command
+  CHARACTER(100) mv_command
+  CHARACTER (len=100) :: s_out_file = "tmp.dat"
+
+  !================== sort file with respect to <id> and than to <frame> (linux-commands) ==================
+  sort_command = ''
+#ifdef UNIX
+  ! PRINT *, "INFO: Using UNIX sort and mv commands"
+  sort_command = 'sort -k1,1 -k2,2 -n ' // TRIM(out_file)  //' > ' // TRIM(s_out_file)
+  mv_command = 'mv ' // TRIM(s_out_file) // ' ' // TRIM(out_file)
+#endif
+#ifdef WIN
+  ! write (0,*) "INFO: Using WINDOWS sort and move commands"
+  sort_command = 'sort ' // TRIM(out_file)  //' > ' // TRIM(s_out_file)
+  mv_command = 'move ' // TRIM(s_out_file) // ' ' // TRIM(out_file)
+#endif
+
+if (sort_command == '') then
+   write (0,*) "WARNING: UNKNOWN OS. Try the directives UNIX or WIN"
+   write (0,*) "WARNING: The output may not be sorted"
+endif
+
+  print *, " "
+  print *, "INFO: Close files" 
+  print *, "INFO: Bytes parsed ", read_size, " /", file_size, "(===> difference ", file_size-read_size,"Bytes)"
+  CLOSE(unit = 9)  !input file
+  CLOSE(unit = 15) !output file
+  PRINT *, sort_command
+  status = SYSTEM(sort_command)
+  IF (status .NE. 0 ) THEN
+     write (0,*) "WARNING: Could not sort"
+  ENDIF
+  PRINT *, mv_command
+  status = SYSTEM(mv_command)
+  IF (status .NE. 0 ) THEN
+     write (0,*) "WARNING: Could not mv"
+  ENDIF
+end subroutine cleanup
+
 subroutine progress(nowPeds, TotalPeds)
   CHARACTER :: CR = CHAR(13)    ! carriage return character
   integer :: totaldotz, dotz, ii, diffdotz
@@ -68,7 +110,6 @@ INTEGER, PARAMETER :: EB = SELECTED_REAL_KIND(12)
 
 CHARACTER (len=100) :: in_file
 CHARACTER (len=100) :: out_file
-CHARACTER (len=100) :: s_out_file = "tmp.dat"
 CHARACTER  :: dummy
 INTEGER ONE_INTEGER, VERSION_NUMBER, N_EVAC, N_PART, ZERO_INTEGER, EVAC_N_QUANTITIES, file_size, read_size, INT_SIZE
 INTEGER ios, I, NN, N, NPLIM, IZERO, EVAC
@@ -85,6 +126,9 @@ CHARACTER(30), ALLOCATABLE,DIMENSION(:) :: NAME
 CHARACTER(30), ALLOCATABLE,DIMENSION(:) :: UNITS
 CHARACTER(100) :: sort_command
 CHARACTER(100) :: mv_command
+integer :: ppos ! position of file's extension
+character(len=3)  :: new_ext="txt"
+
 
 CALL get_command_argument(1, in_file)
 IF ( LEN_TRIM(in_file) == 0) THEN
@@ -94,13 +138,16 @@ IF ( LEN_TRIM(in_file) == 0) THEN
 ENDIF
 
 CALL get_command_argument(2, out_file)
-IF ( LEN_TRIM(out_file) == 0) THEN
-   WRITE (0,*) "ERROR: outputfile is not passed"
-   WRITE (0,*) "USAGE: ./parser <inputfile> <outputfile>"
-   STOP
-ENDIF
 INQUIRE(FILE=in_file, SIZE=file_size)
 PRINT *, "INFO: inputfile = <", TRIM(in_file), ">", "  |  size = ", file_size, " bytes"
+
+IF ( LEN_TRIM(out_file) == 0) THEN
+   ppos = scan(trim(in_file),".", BACK= .true.)
+   if ( ppos > 0 ) out_file = in_file(1:ppos)//new_ext
+   ! WRITE (0,*) "USAGE: ./parser <inputfile> <outputfile>"
+   WRITE (0,*) "INFO: outputfile is: ", out_file
+ENDIF
+
 
 OPEN(unit = 9, file = in_file, form = "unformatted", status = "old",   iostat = ios)
 IF (ios .NE. 0) THEN
@@ -114,23 +161,6 @@ IF (ios .NE. 0) THEN
    STOP
 ENDIF
 
-!================== sort file with respect to <id> and than to <frame> (linux-commands) ==================
-sort_command = ''
-#ifdef UNIX
-write (0,*) "INFO: Using UNIX sort and mv commands"
-sort_command = 'sort -k1,1 -k2,2 -n ' // TRIM(out_file)  //' > ' // TRIM(s_out_file)
-mv_command = 'mv ' // TRIM(s_out_file) // ' ' // TRIM(out_file)
-#endif
-#ifdef WIN
-write (0,*) "INFO: Using WINDOWS sort and move commands"
-sort_command = 'sort ' // TRIM(out_file)  //' > ' // TRIM(s_out_file)
-mv_command = 'move ' // TRIM(s_out_file) // ' ' // TRIM(out_file)
-#endif
-
-if (sort_command == '') then
-   write (0,*) "WARNING: UNKNOWN OS. Try the directives UNIX or WIN"
-   write (0,*) "WARNING: The output may not be sorted"
-endif
 
 
 read_size = 0
@@ -187,8 +217,8 @@ DOFILE: DO
    frame = frame + 1
    READ(9) T           ! the time T as 4 byte real
    read_size = read_size + sizeof(T) + 2*INT_SIZE
-   !WRITE(6, *) "#  TIME = ", T
-   ! print * , "------- frame = ", frame
+   ! WRITE(6, *) "#  TIME = ", T
+   !print * , "------- frame = ", frame
    DO N = 1, N_EVAC
       ! print * , "======="
       READ(9) NPLIM    ! Number of particles in the PART class
@@ -197,12 +227,14 @@ DOFILE: DO
          counter = NPLIM
          WRITE(6,*) "#  MAX PEDESTRIANS = ", NPLIM
       ENDIF
-      
+      call progress(NPLIM, counter) ! generate the progress bar.
+
       IF (NPLIM < 1) THEN
-         STOP 0!DOFILE !STOP
+
+         call cleanup(out_file, read_size, file_size)
+         EXIT DOFILE
       ENDIF
       !============================================================"
-      call progress(NPLIM, counter) ! generate the progress bar.
 
       ALLOCATE(TA(NPLIM),STAT=IZERO)
       CALL ChkMemErr('DUMP','TA',IZERO) 
@@ -259,25 +291,8 @@ DOFILE: DO
          READ(9) ((QP(I,NN), I=1, NPLIM), NN=1,  EVAC_N_QUANTITIES)
          read_size = read_size + sizeof(QP) + 2*INT_SIZE
       END IF
-
       IF (NPLIM == 1)THEN
-         print *, " "
-         print *, "INFO: Close files" 
-         print *, "INFO: Bytes parsed ", read_size, " /", file_size, "(===> difference ", file_size-read_size,"Bytes)"
-         CLOSE(unit = 9)  !input file
-         CLOSE(unit = 15) !output file
-         PRINT *, sort_command
-         status = SYSTEM(sort_command)
-         IF (status .NE. 0 ) THEN
-            write (0,*) "WARNING: Could not sort"
-            EXIT DOFILE
-         ENDIF
-         PRINT *, mv_command
-         status = SYSTEM(mv_command)
-         IF (status .NE. 0 ) THEN
-            write (0,*) "WARNING: Could not mv"
-            EXIT DOFILE
-         ENDIF
+         call cleanup(out_file, read_size, file_size)
          EXIT DOFILE
       ENDIF !(NPLIM == 1)
    ENDDO !N = 1, N_EVAC
