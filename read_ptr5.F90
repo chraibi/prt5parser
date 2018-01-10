@@ -12,10 +12,12 @@
 !     05.06.2014
 !------------------------------------------------------------------------------------------------
 
-subroutine cleanup(out_file, read_size, file_size)
+subroutine cleanup(out_file, read_size, file_size, nframes, t_end)
   character(len=*), intent(in) :: out_file
   INTEGER(4), intent(in)::read_size
   INTEGER(4), intent(in)::file_size
+  REAL(4), intent(in)::t_end
+  INTEGER(4), intent(in)::nframes
   CHARACTER(100) sort_command
   CHARACTER(100) mv_command
   CHARACTER (len=100) :: s_out_file = "tmp.dat"
@@ -53,6 +55,8 @@ endif
   IF (status .NE. 0 ) THEN
      write (0,*) "WARNING: Could not mv"
   ENDIF
+  print *, "#  fps = ", int(nframes/t_end)
+
 end subroutine cleanup
 
 subroutine progress(nowPeds, TotalPeds)
@@ -202,7 +206,7 @@ DO N=1,N_EVAC
 ENDDO ! N_EVAC
 !================ WRITE Header ===========================
 WRITE (15,*) "#description: ", TRIM(in_file)
-WRITE (15,*) "#framerate: 16"
+WRITE (15,*) "#framerate: 16"  !TODO: write header in cleanup()
 WRITE (15,*) "#ID: the agent ID"
 WRITE (15,*) "#FR: the current frame"
 WRITE (15,*) "#X,Y,Z: the agents coordinates (in metres)"
@@ -219,7 +223,10 @@ DOFILE: DO
    read_size = read_size + sizeof(T) + 2*INT_SIZE
    ! WRITE(6, *) "#  TIME = ", T
    !print * , "------- frame = ", frame
-   ! TODO: if T < 0: continue
+   ! TODO:
+   if (T .lt. 0) then
+      continue
+   endif
    ! TODO: check a file with N_EVAC > 1
    DO N = 1, N_EVAC
       ! print * , "======="
@@ -232,7 +239,7 @@ DOFILE: DO
       call progress(NPLIM, counter) ! generate the progress bar.
 
       IF (NPLIM < 1 .and. N .eq. N_EVAC) THEN
-         call cleanup(out_file, read_size, file_size)
+         call cleanup(out_file, read_size, file_size, frame, T)
          EXIT DOFILE
       ENDIF
 
@@ -252,6 +259,7 @@ DOFILE: DO
          ALLOCATE(QP(NPLIM, EVAC_N_QUANTITIES), STAT=IZERO) 
          CALL ChkMemErr('DUMP','QP',IZERO)
       ENDIF
+
 !===================== READ Trajectories ======================
       !if(parti->evac==1) read 7 * NPLIM
       ! else read 3 * NPLIM 
@@ -284,10 +292,8 @@ DOFILE: DO
 
 !================ WRITE Trajectories ======================      
       DO I=1,NPLIM
-         !WRITE (15,*) T, TA(I), XP(I), YP(I)
           WRITE (15, '(I4, x, I4, 3(x, F15.4))') frame, TA(I), XP(I), YP(I), ZP(I)   !x and y in [m]
-         !WRITE (15, '(I4, x, I4, 3(x, F15.4))')  TA(I), frame, XP(I)*100, YP(I)*100, ZP(I)*100   !x and y in[cm] 
-      ENDDO
+       ENDDO
 !==========================================================
       ! AP1: phi, AP2: small semi-axis, AP3: large semi-axis AP4: hight
       ! QP color information for smokeview
@@ -297,11 +303,10 @@ DOFILE: DO
       END IF
 
       IF (NPLIM < 1 .and. N .eq. N_EVAC) THEN
-         call cleanup(out_file, read_size, file_size)
+         call cleanup(out_file, read_size, file_size, frame, T)
          EXIT DOFILE
       ENDIF !(NPLIM == 1)
    ENDDO !N = 1, N_EVAC
-
 ENDDO DOFILE
 
 !============================ DEALLOCATE ==============
