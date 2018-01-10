@@ -4,7 +4,7 @@
 ! frame index x y z
 ! alternatively one can also write out: time index x y z. See line 200
 ! compile: f95  -o parser read_prt5.f90
-! usage: ./parser <filename.prt5> <filename.dat>
+! usage: ./parser <filename.prt5> [<filename.txt>]
 ! tested with GNU Fortran (Ubuntu/Linaro 4.4.4-14ubuntu5.1) 4.4.5 
 !
 !------------------------------------------------------------------------------------------------
@@ -61,13 +61,12 @@ subroutine progress(nowPeds, TotalPeds)
   real :: fraction, percent
   character(len=7)::bar="????% ["
   totaldotz  = 40
-  fraction = real(TotalPeds- nowPeds)/(TotalPeds-1)
+  fraction = real(TotalPeds- nowPeds)/(TotalPeds)
   percent =  fraction * 100
   dotz = int(fraction * totaldotz)
   diffdotz = totaldotz - dotz
   ii=0
   write(unit=bar(1:4),fmt="(i4)") int(percent)
-  
   write(6, fmt="(a8)", advance="no") bar
   !print *, "dotz=", dotz, "  totaldotz = ", totaldotz
    do ii = 1, dotz
@@ -133,7 +132,7 @@ character(len=3)  :: new_ext="txt"
 CALL get_command_argument(1, in_file)
 IF ( LEN_TRIM(in_file) == 0) THEN
    WRITE (0,*) "ERROR: inputfile is not passed"
-   WRITE (0,*) "USAGE: ./parser <inputfile> <outputfile>"
+   WRITE (0,*) "USAGE: ./parser <inputfile> [<outputfile>]"
    STOP
 ENDIF
 
@@ -184,6 +183,7 @@ ELSE
 ENDIF
 
 DO N=1,N_EVAC
+
    READ(9) EVAC_N_QUANTITIES, ZERO_INTEGER  ! ZERO_INTEGER is a place holder
    read_size = read_size + sizeof(EVAC_N_QUANTITIES) + sizeof(ZERO_INTEGER) + 2*INT_SIZE
    WRITE(6,'(A, I2)') " #  EVAC_N_QUANTITIES = ", EVAC_N_QUANTITIES
@@ -219,6 +219,8 @@ DOFILE: DO
    read_size = read_size + sizeof(T) + 2*INT_SIZE
    ! WRITE(6, *) "#  TIME = ", T
    !print * , "------- frame = ", frame
+   ! TODO: if T < 0: continue
+   ! TODO: check a file with N_EVAC > 1
    DO N = 1, N_EVAC
       ! print * , "======="
       READ(9) NPLIM    ! Number of particles in the PART class
@@ -229,11 +231,11 @@ DOFILE: DO
       ENDIF
       call progress(NPLIM, counter) ! generate the progress bar.
 
-      IF (NPLIM < 1) THEN
-
+      IF (NPLIM < 1 .and. N .eq. N_EVAC) THEN
          call cleanup(out_file, read_size, file_size)
          EXIT DOFILE
       ENDIF
+
       !============================================================"
 
       ALLOCATE(TA(NPLIM),STAT=IZERO)
@@ -255,14 +257,16 @@ DOFILE: DO
       ! else read 3 * NPLIM 
       ! TODO: How to know the value parti-evac?
       IF(EVAC == 1) THEN 
-         READ(9, iostat = ios) (XP(I), I=1, NPLIM), (YP(I), I=1, NPLIM), (ZP(I), I=1, NPLIM), &
-              (AP(I,1),I=1,NPLIM),(AP(I,2),I=1,NPLIM),(AP(I,3),I=1,NPLIM),(AP(I,4),I=1,NPLIM)
+!!$         READ(9, iostat = ios) (XP(I), I=1, NPLIM), (YP(I), I=1, NPLIM), (ZP(I), I=1, NPLIM), &
+!!$              (AP(I,1),I=1,NPLIM),(AP(I,2),I=1,NPLIM),(AP(I,3),I=1,NPLIM),(AP(I,4),I=1,NPLIM)
+
+         READ(9, iostat = ios) (XP(I), I=1, NPLIM), (YP(I), I=1, NPLIM), (ZP(I), I=1, NPLIM)
+
          read_size = read_size + 7*sizeof(XP) + 2*INT_SIZE
       ELSE
          READ(9, iostat = ios) (XP(I), I=1, NPLIM), (YP(I), I=1, NPLIM), (ZP(I), I=1, NPLIM)
          read_size = read_size + 3*sizeof(XP) + 2*INT_SIZE
       ENDIF
-      
 !==============================================================
       IF (ios .NE. 0) THEN
          write (0,*) " ERROR: Could not read trajectories "
@@ -281,7 +285,7 @@ DOFILE: DO
 !================ WRITE Trajectories ======================      
       DO I=1,NPLIM
          !WRITE (15,*) T, TA(I), XP(I), YP(I)
-          WRITE (15, '(I4, x, I4, 3(x, F15.4))') frame, TA(I), XP(I)*100, YP(I)*100, ZP(I)*100   !x and y in[cm] 
+          WRITE (15, '(I4, x, I4, 3(x, F15.4))') frame, TA(I), XP(I), YP(I), ZP(I)   !x and y in [m]
          !WRITE (15, '(I4, x, I4, 3(x, F15.4))')  TA(I), frame, XP(I)*100, YP(I)*100, ZP(I)*100   !x and y in[cm] 
       ENDDO
 !==========================================================
@@ -291,11 +295,13 @@ DOFILE: DO
          READ(9) ((QP(I,NN), I=1, NPLIM), NN=1,  EVAC_N_QUANTITIES)
          read_size = read_size + sizeof(QP) + 2*INT_SIZE
       END IF
-      IF (NPLIM == 1)THEN
+
+      IF (NPLIM < 1 .and. N .eq. N_EVAC) THEN
          call cleanup(out_file, read_size, file_size)
          EXIT DOFILE
       ENDIF !(NPLIM == 1)
    ENDDO !N = 1, N_EVAC
+
 ENDDO DOFILE
 
 !============================ DEALLOCATE ==============
