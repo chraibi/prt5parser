@@ -21,7 +21,6 @@ subroutine cleanup(out_file, read_size, file_size, nframes, t_end)
   CHARACTER(100) sort_command
   CHARACTER(100) mv_command
   CHARACTER (len=100) :: s_out_file = "tmp.dat"
-
   !================== sort file with respect to <id> and than to <frame> (linux-commands) ==================
   sort_command = ''
 #ifdef UNIX
@@ -43,8 +42,6 @@ endif
   print *, " "
   print *, "INFO: Close files" 
   print *, "INFO: Bytes parsed ", read_size, " /", file_size, "(===> difference ", file_size-read_size,"Bytes)"
-  CLOSE(unit = 9)  !input file
-  CLOSE(unit = 15) !output file
   PRINT *, sort_command
   status = SYSTEM(sort_command)
   IF (status .NE. 0 ) THEN
@@ -56,6 +53,8 @@ endif
      write (0,*) "WARNING: Could not mv"
   ENDIF
   print *, "#  fps = ", int(nframes/t_end)
+  CLOSE(unit = 9)  !input file
+  CLOSE(unit = 15) !output file
 
 end subroutine cleanup
 
@@ -109,8 +108,6 @@ IMPLICIT  NONE
 ! Precision of "Four Byte" and "Eight Byte" reals
 INTEGER, PARAMETER :: FB = SELECTED_REAL_KIND(6)
 INTEGER, PARAMETER :: EB = SELECTED_REAL_KIND(12)
-
-
 CHARACTER (len=100) :: in_file
 CHARACTER (len=100) :: out_file
 CHARACTER  :: dummy
@@ -158,7 +155,7 @@ IF (ios .NE. 0) THEN
    STOP
 ENDIF
 
-OPEN(unit = 15, file = out_file, form = "formatted", status = "replace", iostat = ios)
+OPEN(unit = 15, file = out_file, form = "formatted", status = "replace", iostat = ios, access='stream')
 IF (ios .NE. 0) THEN
    write (0,*) "ERROR: Could not open outputfile ", out_file
    STOP
@@ -206,13 +203,10 @@ DO N=1,N_EVAC
 ENDDO ! N_EVAC
 !================ WRITE Header ===========================
 WRITE (15,*) "#description: ", TRIM(in_file)
-WRITE (15,*) "#framerate: 16"  !TODO: write header in cleanup()
 WRITE (15,*) "#ID: the agent ID"
 WRITE (15,*) "#FR: the current frame"
 WRITE (15,*) "#X,Y,Z: the agents coordinates (in metres)"
-WRITE (15,*) " "
 WRITE(15,*)  "#FR	ID	X	Y	Z"
-
 frame = 0 
 counter = 1
 is_error = 0 ! 1 if something went wrong after allucating the arrays
@@ -239,6 +233,7 @@ DOFILE: DO
       call progress(NPLIM, counter) ! generate the progress bar.
 
       IF (NPLIM < 1 .and. N .eq. N_EVAC) THEN
+         write (15,*) "#framerate: ", int(frame/T)
          call cleanup(out_file, read_size, file_size, frame, T)
          EXIT DOFILE
       ENDIF
