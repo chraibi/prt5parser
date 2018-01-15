@@ -1,7 +1,7 @@
 ! TODO: check getpart5data in smokeview/IOpart.c
 
 ! This program reads a prt5-file (FDS Version 5.5) and writes the trajectories to an output file in the following format
-! frame index x y z
+! index frame x y z
 ! alternatively one can also write out: time index x y z. See line 200
 ! compile: f95  -o parser read_prt5.f90
 ! usage: ./parser <filename.prt5> [<filename.txt>]
@@ -206,7 +206,7 @@ WRITE (15,*) "#description: ", TRIM(in_file)
 WRITE (15,*) "#ID: the agent ID"
 WRITE (15,*) "#FR: the current frame"
 WRITE (15,*) "#X,Y,Z: the agents coordinates (in metres)"
-WRITE(15,*)  "#FR	ID	X	Y	Z"
+WRITE(15,*)  "#ID	FR	X	Y	Z"
 frame = 0 
 counter = 1
 is_error = 0 ! 1 if something went wrong after allucating the arrays
@@ -287,7 +287,7 @@ DOFILE: DO
 
 !================ WRITE Trajectories ======================      
       DO I=1,NPLIM
-          WRITE (15, '(I4, x, I4, 3(x, F15.4))') frame, TA(I), XP(I), YP(I), ZP(I)   !x and y in [m]
+          WRITE (15, '(I4, x, I4, 3(x, F15.4))') TA(I), frame, XP(I), YP(I), ZP(I)   !x and y in [m]
        ENDDO
 !==========================================================
       ! AP1: phi, AP2: small semi-axis, AP3: large semi-axis AP4: hight
