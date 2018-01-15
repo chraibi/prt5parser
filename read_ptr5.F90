@@ -229,13 +229,14 @@ DOFILE: DO
       IF (frame .eq. 1) then 
          counter = NPLIM
          WRITE(6,*) "#  MAX PEDESTRIANS = ", NPLIM
-      ENDIF
-      if (NPLIM .eq. 0) then
-         WRITE(6,*) ">> No pedestrians found. Exit"
-           CLOSE(unit = 9)  !input file
-           CLOSE(unit = 15) !output file2
-         stop
+         if (NPLIM .eq. 0) then
+            WRITE(6,*) ">> No pedestrians found. Exit"
+            CLOSE(unit = 9)  !input file
+            CLOSE(unit = 15) !output file2
+            stop
       endif
+      ENDIF
+
    
       call progress(NPLIM, counter) ! generate the progress bar.
 

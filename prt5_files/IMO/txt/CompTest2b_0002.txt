@@ -1,0 +1,5 @@
+ #description: ./ptr5_files/IMO/CompTest2b_0002.prt5
+ #ID: the agent ID
+ #FR: the current frame
+ #X,Y,Z: the agents coordinates (in metres)
+ #ID	FR	X	Y	Z

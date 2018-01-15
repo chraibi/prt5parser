@@ -25,14 +25,13 @@ if z[0] != z[-1]:
     ax = fig.add_subplot(111, projection='3d')
     print("3D")
     _3D = 1
-    
+
 for ped in peds:
     if ped%10 == 0:
         print("ped = %.3d"%ped)
     d = D[D[:,0] == ped]
     x = d[:,2]
     y = d[:,3]
-
     if _3D:
         z = d[:, 4]
         plot(x, y, z, "-", color='r',lw=0.2)
@@ -41,10 +40,9 @@ for ped in peds:
         
 xlabel("x [m]")
 ylabel("y [m]")
-name = filename.split(".")[0]
+name = filename.split(".txt")[0]
 title(name)
-for end in ['png', 'pdf', 'eps']:
+for end in ['png']:
     print("save figure as <%s.%s>"%(name,end))
     savefig("%s.%s"%(name, end))
 
-show()
