@@ -4,16 +4,8 @@
 This program reads a `prt5-file` (tested with FDS Version 5.5 and FDS 6.0) and writes the pedestrian's trajectories to an output file in the following format
 
 ```
-frame index x y z
+index frame x y z
 ```
-
-alternatively one can also output the following format:
-
-```
-time index x y z
-```
-
-Change in the code the `lines 171 and 172`
 
 ## compile
 ```
@@ -59,6 +51,6 @@ I have no idea if it will work when compiled with other compilers. Since, I do n
 
 If you have a file that makes it fail, please open an `issue`. 
 
-Check also the example and the movie in the [wiki](https://github.com/chraibi/ptr5parser/wiki/Example) showing an evacuation of a stadium vometory.
+Check also the example and the movie in the [wiki](https://github.com/chraibi/ptr5parser/wiki) showing an evacuation of a stadium vometory.
 
 
