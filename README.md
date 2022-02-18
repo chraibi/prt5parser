@@ -1,4 +1,7 @@
 [![GitHub license](https://img.shields.io/badge/license-GPL-blue.svg)](https://raw.githubusercontent.com/chraibi/ptr5parser/master/LICENSE) [![Twitter](https://img.shields.io/twitter/url/https/github.com/chraibi/ptr5parser.svg?style=social)](https://twitter.com/intent/tweet?text=Wow:&url=%5Bobject%20Object%5D)
+[![DOI](https://zenodo.org/badge/13888565.svg)](https://zenodo.org/badge/latestdoi/13888565)
+
+
 ## Purpose
 
 This program reads a `prt5-file` (tested with FDS Version 5.5 and FDS 6.0) and writes the pedestrian's trajectories to an output file in the following format
